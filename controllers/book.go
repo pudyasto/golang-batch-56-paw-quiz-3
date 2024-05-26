@@ -6,6 +6,7 @@ import (
 	"quiz-3/database"
 	"quiz-3/repository"
 	"quiz-3/structs"
+	"regexp"
 	"strconv"
 	"time"
 
@@ -40,12 +41,31 @@ func InsertBook(c *gin.Context) {
 		panic(err)
 	}
 
+	if !isValidURL(book.Image_url) && !isValidYear(book.Release_year) {
+		c.JSON(http.StatusNotAcceptable, gin.H{
+			"result": []string{
+				"URL Tidak Tidak Valid!",
+				"Tahun Buku Tidak Valid! Min 1980 Maks 2021",
+			},
+		})
+		return
+	} else if !isValidURL(book.Image_url) {
+		c.JSON(http.StatusNotAcceptable, gin.H{
+			"result": "URL Tidak Tidak Valid!",
+		})
+		return
+	} else if !isValidYear(book.Release_year) {
+		c.JSON(http.StatusNotAcceptable, gin.H{
+			"result": "Tahun Buku Tidak Valid! Min 1980 Maks 2021",
+		})
+		return
+	}
 	currentTime := time.Now()
 	formattedTime := currentTime.Format("2006-01-02 15:04:05")
 	book.Created_at = formattedTime
 	book.Updated_at = formattedTime
 
-	fmt.Println(book)
+	book.Thickness = getThickness(book.Total_page)
 	err = repository.InsertBook(database.DbConnection, book)
 	if err != nil {
 		panic(err)
@@ -66,12 +86,34 @@ func UpdateBook(c *gin.Context) {
 		panic(err)
 	}
 
+	if !isValidURL(book.Image_url) && !isValidYear(book.Release_year) {
+		c.JSON(http.StatusNotAcceptable, gin.H{
+			"result": []string{
+				"URL Tidak Tidak Valid!",
+				"Tahun Buku Tidak Valid! Min 1980 Maks 2021",
+			},
+		})
+		return
+	} else if !isValidURL(book.Image_url) {
+		c.JSON(http.StatusNotAcceptable, gin.H{
+			"result": "URL Tidak Tidak Valid!",
+		})
+		return
+	} else if !isValidYear(book.Release_year) {
+		c.JSON(http.StatusNotAcceptable, gin.H{
+			"result": "Tahun Buku Tidak Valid! Min 1980 Maks 2021",
+		})
+		return
+	}
+
 	book.Id = int64(id)
 	currentTime := time.Now()
 	formattedTime := currentTime.Format("2006-01-02 15:04:05")
 
 	book.Updated_at = formattedTime
+	book.Thickness = getThickness(book.Total_page)
 
+	fmt.Println(book.Thickness)
 	err = repository.UpdateBook(database.DbConnection, book)
 	if err != nil {
 		panic(err)
@@ -102,4 +144,27 @@ func DeleteBook(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"result": "Success Delete Book",
 	})
+}
+
+func isValidURL(url string) bool {
+	re := regexp.MustCompile(`^(https?|ftp):\/\/[^\s/$.?#].[^\s]*$`)
+	return re.MatchString(url)
+}
+
+func isValidYear(strYear int64) bool {
+	if strYear >= 1980 && strYear <= 2021 {
+		return true
+	} else {
+		return false
+	}
+}
+
+func getThickness(totalPage int64) string {
+	if totalPage <= 100 {
+		return "Tipis"
+	} else if totalPage > 100 && totalPage <= 200 {
+		return "Sedang"
+	} else {
+		return "Tebal"
+	}
 }
