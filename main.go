@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"net/http"
 	"os"
 	"quiz-3/controllers"
 	"quiz-3/database"
@@ -54,17 +55,31 @@ func main() {
 	router.GET("/lingkaran", controllers.HitungLingkaran)
 
 	// CRUD Category
-
 	router.GET("/categories", controllers.GetAllCategory)
-	router.POST("/categories", controllers.InsertCategory)
-	router.PUT("/categories/:id", controllers.UpdateCategory)
-	router.DELETE("/categories/:id", controllers.DeleteCategory)
 
 	// CRUD Books
 	router.GET("/books", controllers.GetAllBook)
-	router.POST("/books", controllers.InsertBook)
-	router.PUT("/books/:id", controllers.UpdateBook)
-	router.DELETE("/books/:id", controllers.DeleteBook)
+
+	// Group route dengan middleware BasicAuth
+	authorized := router.Group("/", auth())
+	{
+		// Sub-group untuk books
+		books := authorized.Group("/books")
+		{
+			books.POST("/", controllers.InsertBook)
+			books.PUT("/:id", controllers.UpdateBook)
+			books.DELETE("/:id", controllers.DeleteBook)
+		}
+
+		// Sub-group untuk authors
+		categories := authorized.Group("/categories")
+		{
+
+			categories.POST("/", controllers.InsertCategory)
+			categories.PUT("/:id", controllers.UpdateCategory)
+			categories.DELETE("/:id", controllers.DeleteCategory)
+		}
+	}
 
 	router.Run(envPortOr("8080"))
 }
@@ -76,4 +91,25 @@ func envPortOr(port string) string {
 	}
 	// Otherwise, return the value of `port` variable from function argument
 	return ":" + port
+}
+
+// Fungi Log yang berguna sebagai middleware
+func auth() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		uname, pwd, ok := c.Request.BasicAuth()
+		if !ok {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Username atau Password tidak boleh kosong"})
+			c.Abort()
+			return
+		}
+
+		if (uname == "admin" && pwd == "password") || (uname == "editor" && pwd == "secret") {
+			c.Next()
+			return
+		}
+
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Anda tidak Tidak Memiliki Hak Akses"})
+		c.Abort()
+		return
+	}
 }
