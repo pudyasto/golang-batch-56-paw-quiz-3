@@ -17,7 +17,7 @@ func GetAllCategory(c *gin.Context) {
 		result gin.H
 	)
 
-	categorys, err := repository.GetAllCategory(database.DbConnection)
+	categories, err := repository.GetAllCategory(database.DbConnection)
 
 	if err != nil {
 		result = gin.H{
@@ -25,7 +25,27 @@ func GetAllCategory(c *gin.Context) {
 		}
 	} else {
 		result = gin.H{
-			"result": categorys,
+			"result": categories,
+		}
+	}
+
+	c.JSON(http.StatusOK, result)
+}
+
+func GetAllBookByCategories(c *gin.Context) {
+	var (
+		result gin.H
+	)
+	id, _ := strconv.Atoi(c.Param("id"))
+	categories, err := repository.GetAllBookByCategories(database.DbConnection, id)
+
+	if err != nil {
+		result = gin.H{
+			"result": err,
+		}
+	} else {
+		result = gin.H{
+			"result": categories,
 		}
 	}
 

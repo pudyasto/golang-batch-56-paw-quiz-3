@@ -56,6 +56,7 @@ func main() {
 
 	// CRUD Category
 	router.GET("/categories", controllers.GetAllCategory)
+	router.GET("/categories/:id/books", controllers.GetAllBookByCategories)
 
 	// CRUD Books
 	router.GET("/books", controllers.GetAllBook)
